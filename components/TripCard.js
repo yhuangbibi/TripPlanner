@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
 import { formatDisplayDate, statusColors } from '../utils/tripHelpers';
+import { getHotelGaps, formatShortDate } from '../utils/tripHelpers';
 
 export default function TripCard({ destination, origin, startDate, endDate, airTicket, hotel, tripType, receipts, status, onEdit, onDelete }) {
   const colors = statusColors[status];
@@ -16,12 +17,40 @@ export default function TripCard({ destination, origin, startDate, endDate, airT
         {formatDisplayDate(startDate)} – {formatDisplayDate(endDate)}
       </Text>
       {airTicket ? <Text style={styles.detail}>✈️  {airTicket}</Text> : null}
-      {hotel ? <Text style={styles.detail}>🏨  {hotel}</Text> : null}
+      {hotel?.name ? (
+        <Text style={styles.detail}>🏨  {hotel.name}
+          {'  '}<Text style={styles.hotelDates}>
+            {formatDisplayDate(hotel.checkIn)} – {formatDisplayDate(hotel.checkOut)}
+          </Text>
+        </Text>
+      ) : null}
+
+      {/* No hotel at all */}
       {airTicket && !hotel && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>💡 No hotel booked yet</Text>
         </View>
       )}
+
+      {/* Hotel doesn't cover full trip */}
+      {airTicket && hotel && (() => {
+        const gaps = getHotelGaps(startDate, endDate, hotel);
+        if (!gaps) return null;
+        return (
+          <View style={styles.notice}>
+            <Text style={styles.noticeText}>
+              💡 Hotel not booked for{' '}
+              {gaps.map((gap, i) => {
+                const sameDay = gap.from.getTime() === gap.to.getTime();
+                const label = sameDay
+                  ? formatShortDate(gap.from)
+                  : `${formatShortDate(gap.from)} – ${formatShortDate(gap.to)}`;
+                return (i > 0 ? ' and ' : '') + label;
+              }).join('')}
+            </Text>
+          </View>
+        );
+})()}
       {tripType && (
         <Text style={styles.detail}>
           {tripType === 'Personal' ? '🧳' : tripType === 'Business' ? '💼' : '✨'}  {tripType}

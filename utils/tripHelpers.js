@@ -36,3 +36,29 @@ export const statusColors = {
   Planning:  { bg: '#fff8e8', text: '#cc8800' },
   Completed: { bg: '#e8f8ee', text: '#007a33' },
 };
+
+export const getHotelGaps = (startStr, endStr, hotel) => {
+  if (!hotel?.name || !hotel?.checkIn || !hotel?.checkOut) return null;
+
+  const tripStart = parseDate(startStr);
+  const tripEnd = parseDate(endStr);
+  const hotelStart = parseDate(hotel.checkIn);
+  const hotelEnd = parseDate(hotel.checkOut);
+
+  const gaps = [];
+
+  // Check days before hotel check-in
+  if (hotelStart > tripStart) {
+    gaps.push({ from: tripStart, to: new Date(hotelStart.getTime() - 86400000) });
+  }
+
+  // Check days after hotel check-out
+  if (hotelEnd < tripEnd) {
+    gaps.push({ from: new Date(hotelEnd.getTime() + 86400000), to: tripEnd });
+  }
+
+  return gaps.length > 0 ? gaps : null;
+};
+
+export const formatShortDate = (date) =>
+  date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

@@ -4,6 +4,16 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "TripPlanner uses your location to automatically fill in your departure city."
       }
-    }
+    },   
+  
+    "splash": {
+        "image": "./assets/IMG_4577.heic",
+        "resizeMode": "cover",
+        "backgroundColor": "#1a1a1a"
+      },
+    
+    "icon": "./assets/icon.png"
   }
 }
+
+

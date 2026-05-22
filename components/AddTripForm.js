@@ -18,7 +18,15 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
     initialValues ? parseDate(initialValues.endDate) : new Date()
   );
   const [airTicket, setAirTicket] = useState(initialValues?.airTicket || '');
-  const [hotel, setHotel] = useState(initialValues?.hotel || '');
+  const [hotelName, setHotelName] = useState(initialValues?.hotel?.name || '');
+  const [hotelCheckIn, setHotelCheckIn] = useState(
+    initialValues?.hotel?.checkIn ? parseDate(initialValues.hotel.checkIn) : new Date()
+  );
+  const [hotelCheckOut, setHotelCheckOut] = useState(
+    initialValues?.hotel?.checkOut ? parseDate(initialValues.hotel.checkOut) : new Date()
+  );
+  const [showHotelCheckInPicker, setShowHotelCheckInPicker] = useState(false);
+  const [showHotelCheckOutPicker, setShowHotelCheckOutPicker] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -75,10 +83,10 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
     const status = getStatus(startStr, endStr, airTicket);
 
     // Gentle reminder if air ticket entered but no hotel
-    if (airTicket.trim().length > 0 && !hotel.trim()) {
+    if (airTicket.trim().length > 0 && !hotelName.trim()) {
       Alert.alert(
         'Just a reminder',
-        'You have an air ticket but no hotel booked yet. You can always edit this trip later to add one.',
+        'You have an air ticket but no hotel booked yet. You can always edit this trip later.',
         [{ text: 'Got it', onPress: () => onAdd(buildTrip(startStr, endStr, status)) }]
       );
       return;
@@ -93,7 +101,11 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
     startDate: startStr,
     endDate: endStr,
     airTicket,
-    hotel,
+    hotel: hotelName.trim() ? {
+      name: hotelName,
+      checkIn: toDateString(hotelCheckIn),
+      checkOut: toDateString(hotelCheckOut),
+    } : null,
     tripType,
     receipts,
     status,
@@ -229,9 +241,76 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
         <TextInput
           style={styles.input}
           placeholder="e.g. Hilton Tokyo"
-          value={hotel}
-          onChangeText={setHotel}
+          value={hotelName}
+          onChangeText={setHotelName}
         />
+
+        {/* Only show hotel dates if a hotel name is entered */}
+        {hotelName.trim().length > 0 && (
+          <>
+            <Text style={styles.label}>Hotel check-in *</Text>
+            <TouchableOpacity style={styles.dateButton} onPress={() => setShowHotelCheckInPicker(true)}>
+              <Text style={styles.dateButtonText}>📅  {formatDisplay(hotelCheckIn)}</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Hotel check-out *</Text>
+            <TouchableOpacity style={styles.dateButton} onPress={() => setShowHotelCheckOutPicker(true)}>
+              <Text style={styles.dateButtonText}>📅  {formatDisplay(hotelCheckOut)}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Hotel Check-in Picker Modal */}
+        <Modal transparent visible={showHotelCheckInPicker} animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hotel check-in</Text>
+                <TouchableOpacity onPress={() => setShowHotelCheckInPicker(false)}>
+                  <Text style={styles.modalDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={hotelCheckIn}
+                mode="date"
+                display="inline"
+                minimumDate={startDate}
+                maximumDate={endDate}
+                textColor="#000000"
+                accentColor="#0066cc"
+                onChange={(event, selected) => {
+                  if (selected) setHotelCheckIn(selected);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {/* Hotel Check-out Picker Modal */}
+        <Modal transparent visible={showHotelCheckOutPicker} animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hotel check-out</Text>
+                <TouchableOpacity onPress={() => setShowHotelCheckOutPicker(false)}>
+                  <Text style={styles.modalDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={hotelCheckOut}
+                mode="date"
+                display="inline"
+                minimumDate={hotelCheckIn}
+                maximumDate={endDate}
+                textColor="#000000"
+                accentColor="#0066cc"
+                onChange={(event, selected) => {
+                  if (selected) setHotelCheckOut(selected);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
         {/* Trip Type */}
         <Text style={styles.label}>Trip type *</Text>
         <View style={styles.tripTypeRow}>

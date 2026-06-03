@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
   Alert, KeyboardAvoidingView, Platform, Modal, Image, ScrollView
@@ -6,7 +6,10 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import { parseDate, getStatus, formatDisplayDate } from '../utils/tripHelpers';
+import { parseDate, getStatus, formatDisplayDate, detectAirline } from '../utils/tripHelpers';
+
+
+
 
 export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
   const [origin, setOrigin] = useState(initialValues?.origin || '');
@@ -32,6 +35,20 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [tripType, setTripType] = useState(initialValues?.tripType || 'Personal');
   const [receipts, setReceipts] = useState(initialValues?.receipts || []);
+  const [detectedHotel, setDetectedHotel] = useState(null);
+  const [detectingHotel, setDetectingHotel] = useState(false);
+  const [detectedAirline, setDetectedAirline] = useState(
+    initialValues?.airTicket ? detectAirline(initialValues.airTicket) : null
+  );
+  const hotelDetectTimer = useRef(null);
+  const handleHotelChange = (text) => {
+    setHotelName(text);
+    setDetectedHotel(null);
+    clearTimeout(hotelDetectTimer.current);
+    hotelDetectTimer.current = setTimeout(() => {
+      detectHotelInfo(text);
+    }, 800); // wait 800ms after user stops typing
+  };
   const formatDisplay = (date) =>
     date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -101,6 +118,7 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
     startDate: startStr,
     endDate: endStr,
     airTicket,
+    airline: detectedAirline,
     hotel: hotelName.trim() ? {
       name: hotelName,
       checkIn: toDateString(hotelCheckIn),
@@ -133,7 +151,34 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
       setReceipts(prev => [...prev, ...newReceipts]);
     }
   };
-
+  const detectHotelInfo = async (text) => {
+    if (text.trim().length < 3) {
+      setDetectedHotel(null);
+      return;
+    }
+    setDetectingHotel(true);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [{
+            role: 'user',
+            content: `From this hotel booking text, extract only the full hotel name. If you cannot identify a specific hotel name, return null. Return JSON only: {"hotelName": "Full Hotel Name"} or {"hotelName": null}. Text: "${text}"`
+          }]
+        })
+      });
+      const data = await response.json();
+      const result = JSON.parse(data.content[0].text);
+      setDetectedHotel(result.hotelName);
+    } catch {
+      setDetectedHotel(null);
+    } finally {
+      setDetectingHotel(false);
+    }
+  };
   const removeReceipt = (id) => {
     setReceipts(prev => prev.filter(r => r.id !== id));
   };
@@ -234,16 +279,35 @@ export default function AddTripForm({ onAdd, onCancel, initialValues = null }) {
           style={styles.input}
           placeholder="e.g. UA123 or ABC123"
           value={airTicket}
-          onChangeText={setAirTicket}
+          onChangeText={(text) => {
+            setAirTicket(text);
+            setDetectedAirline(detectAirline(text));
+          }}
         />
+        {detectedAirline && (
+          <View style={styles.detectedBadge}>
+            <Text style={styles.detectedText}>✈️  {detectedAirline}</Text>
+          </View>
+        )}
 
         <Text style={styles.label}>Hotel (optional)</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Hilton Tokyo"
+          placeholder="e.g. Hilton Tokyo or paste booking ref"
           value={hotelName}
-          onChangeText={setHotelName}
+          onChangeText={handleHotelChange}
         />
+        {detectingHotel && (
+          <Text style={styles.detectingText}>Looking up hotel...</Text>
+        )}
+        {detectedHotel && detectedHotel !== hotelName && (
+          <View style={styles.detectedBadge}>
+            <Text style={styles.detectedText}>🏨  {detectedHotel}</Text>
+            <TouchableOpacity onPress={() => setHotelName(detectedHotel)}>
+              <Text style={styles.useThisText}>Use this</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Only show hotel dates if a hotel name is entered */}
         {hotelName.trim().length > 0 && (
@@ -413,4 +477,20 @@ const styles = StyleSheet.create({
   receiptName: { fontSize: 10, color: '#888', marginTop: 4, textAlign: 'center' },
   uploadButton: { backgroundColor: '#0066cc', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   uploadButtonText: { color: 'white', fontSize: 13, fontWeight: '500' },
+  detectedBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    marginTop: 6, 
+    padding: 10, 
+    backgroundColor: '#f0f7ff', 
+    borderRadius: 8, 
+    borderWidth: 0.5, 
+    borderColor: '#b3d4f5' 
+  },
+  detectedText: { fontSize: 13, color: '#0055aa' },
+  useThisText: { fontSize: 13, color: '#0066cc', fontWeight: '600' },
+  detectingText: { fontSize: 12, color: '#aaa', marginTop: 4, paddingLeft: 2 },
 });
+
+  

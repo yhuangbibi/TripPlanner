@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Image } from 'react-native';
 import { formatDisplayDate, statusColors } from '../utils/tripHelpers';
 import { getHotelGaps, formatShortDate } from '../utils/tripHelpers';
+import { getAirlineLogoUrl } from '../utils/tripHelpers';
 
-export default function TripCard({ destination, origin, startDate, endDate, airTicket, hotel, tripType, receipts, status, onEdit, onDelete }) {
+
+export default function TripCard({ destination, origin, startDate, endDate, airTicket, hotel, tripType, receipts, status, onEdit, onDelete,airline }) {
   const colors = statusColors[status];
   return (
     <View style={styles.card}>
@@ -16,7 +18,24 @@ export default function TripCard({ destination, origin, startDate, endDate, airT
       <Text style={styles.dates}>
         {formatDisplayDate(startDate)} – {formatDisplayDate(endDate)}
       </Text>
-      {airTicket ? <Text style={styles.detail}>✈️  {airTicket}</Text> : null}
+      {airTicket ? (
+        <View style={styles.airlineRow}>
+          <Text style={styles.detail}>✈️  {airTicket}</Text>
+          {airline ? (
+            <>
+              <Text style={styles.airlineName}>  ·  </Text>
+              {getAirlineLogoUrl(airTicket) && (
+                <Image
+                  source={{ uri: getAirlineLogoUrl(airTicket) }}
+                  style={styles.airlineLogo}
+                  resizeMode="contain"
+                />
+              )}
+              <Text style={styles.airlineName}>{airline}</Text>
+            </>
+          ) : null}
+        </View>
+      ) : null}
       {hotel?.name ? (
         <Text style={styles.detail}>🏨  {hotel.name}
           {'  '}<Text style={styles.hotelDates}>
@@ -102,4 +121,7 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     color: '#7c5cbf' 
   },
+  airlineName: { fontSize: 13, color: '#888' },
+  airlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  airlineLogo: { width: 24, height: 24, borderRadius: 6, backgroundColor: '#f5f5f5' },
 });

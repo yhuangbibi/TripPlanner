@@ -62,3 +62,62 @@ export const getHotelGaps = (startStr, endStr, hotel) => {
 
 export const formatShortDate = (date) =>
   date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+export const AIRLINE_CODES = {
+  AA: 'American Airlines',
+  AS: 'Alaska Airlines',
+  B6: 'JetBlue Airways',
+  DL: 'Delta Air Lines',
+  F9: 'Frontier Airlines',
+  G4: 'Allegiant Air',
+  HA: 'Hawaiian Airlines',
+  NK: 'Spirit Airlines',
+  SY: 'Sun Country Airlines',
+  UA: 'United Airlines',
+  WN: 'Southwest Airlines',
+  AC: 'Air Canada',
+  AF: 'Air France',
+  AZ: 'ITA Airways',
+  BA: 'British Airways',
+  CA: 'Air China',
+  CX: 'Cathay Pacific',
+  EK: 'Emirates',
+  EY: 'Etihad Airways',
+  FZ: 'Flydubai',
+  IB: 'Iberia',
+  JL: 'Japan Airlines',
+  KE: 'Korean Air',
+  KL: 'KLM',
+  LH: 'Lufthansa',
+  MH: 'Malaysia Airlines',
+  MU: 'China Eastern',
+  NH: 'ANA',
+  NZ: 'Air New Zealand',
+  OZ: 'Asiana Airlines',
+  QF: 'Qantas',
+  QR: 'Qatar Airways',
+  SA: 'South African Airways',
+  SK: 'Scandinavian Airlines',
+  SQ: 'Singapore Airlines',
+  TG: 'Thai Airways',
+  TK: 'Turkish Airlines',
+  VS: 'Virgin Atlantic',
+  ZH: 'Shenzhen Airlines',
+  CZ: 'China Southern',
+  MF: 'Xiamen Airlines',
+  SC: 'Shandong Airlines',
+  VN: 'Vietnam Airlines',
+  BR: 'EVA Air',
+  CI: 'China Airlines',
+};
+
+export const detectAirline = (input) => {
+  if (!input || input.trim().length < 2) return null;
+  const code = input.trim().toUpperCase().slice(0, 2);
+  return AIRLINE_CODES[code] || null;
+};
+export const getAirlineLogoUrl = (airTicket) => {
+  if (!airTicket || airTicket.trim().length < 2) return null;
+  const code = airTicket.trim().toUpperCase().slice(0, 2);
+  return `https://www.gstatic.com/flights/airline_logos/70px/${code}.png`;
+};
